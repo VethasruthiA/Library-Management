@@ -1,4 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { API_URL, apiRequest as request } from './api.js';
+import { useAuth } from './AuthContext.jsx';
 import {
   AlertCircle,
   ArrowDownUp,
@@ -20,37 +23,10 @@ import {
   X,
 } from 'lucide-react';
 
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '');
 const ROLE_OPTIONS = ['STUDENT', 'LIBRARIAN', 'ADMIN'];
 
 function getUserId(user) {
   return user?.id ?? user?._id ?? '';
-}
-
-async function request(path, options = {}) {
-  let response;
-  try {
-    response = await fetch(`${API_URL}${path}`, {
-      ...options,
-      headers: {
-        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-        ...options.headers,
-      },
-    });
-  } catch {
-    throw new Error(`Could not reach the server at ${API_URL}. Check that your backend is running.`);
-  }
-
-  if (response.status === 204) return null;
-  const contentType = response.headers.get('content-type') || '';
-  const result = contentType.includes('application/json') ? await response.json() : await response.text();
-  if (!response.ok) {
-    const message = typeof result === 'string'
-      ? result
-      : result?.message || result?.detail || result?.error || `Request failed (${response.status})`;
-    throw new Error(message);
-  }
-  return result;
 }
 
 function initials(name = '') {
@@ -180,7 +156,9 @@ function DetailModal({ user, onClose, onEdit }) {
   );
 }
 
-function App() {
+function UserManagementPage() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -291,7 +269,7 @@ function App() {
       <main className="main-content" id="members">
         <header className="topbar">
           <div className="breadcrumb"><span>Workspace</span><span className="crumb-slash">/</span><strong>Members</strong></div>
-          <div className="topbar-right"><span className="topbar-date"><Clock3 size={15} /> Library administration</span><div className="top-avatar">L</div></div>
+          <div className="topbar-right"><span className="topbar-date"><Clock3 size={15} /> Library administration</span><Link className="admin-home-link" to="/admin">Admin home</Link><button className="button button-quiet admin-logout" onClick={() => { logout(); navigate('/login', { replace: true }); }}>Sign out</button></div>
         </header>
 
         <section className="page-content">
@@ -356,4 +334,4 @@ function App() {
   );
 }
 
-export default App;
+export default UserManagementPage;
