@@ -335,6 +335,9 @@ h1 { font: 700 34px/1.15 'Manrope', sans-serif; letter-spacing: -1.4px; margin-b
 .seat-directory-head p { margin: 0; color: #92978f; font-size: 10px; }
 .seat-head-actions { display: flex; gap: 8px; }
 .seat-head-actions .button { padding: 9px 11px; font-size: 10px; }
+.seat-filter { display: inline-flex; align-items: center; padding: 3px; gap: 2px; border: 1px solid #e7eae3; border-radius: 7px; background: #f7f8f5; }
+.seat-filter button { min-height: 29px; padding: 0 10px; color: #80877d; background: transparent; border: 0; border-radius: 5px; font-size: 9px; font-weight: 600; }
+.seat-filter button.selected { color: #45634b; background: white; box-shadow: 0 1px 3px rgba(36, 49, 36, .11); }
 .seat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 18px; }
 .seat-card { position: relative; min-height: 153px; padding: 15px; border: 1px solid #eaede7; border-radius: 9px; background: #fff; }
 .seat-icon { width: 37px; height: 37px; display: grid; place-items: center; color: #537354; background: #edf3ea; border-radius: 10px; }
@@ -344,7 +347,7 @@ h1 { font: 700 34px/1.15 'Manrope', sans-serif; letter-spacing: -1.4px; margin-b
 .seat-status i.available { background: #78a17a; }
 .seat-card h3 { margin: 14px 0 7px; color: #3e473d; font: 700 13px 'Manrope', sans-serif; }
 .seat-card > p { display: flex; align-items: center; gap: 5px; margin: 0; color: #959a92; font-size: 9px; }
-.seat-card-actions { display: flex; justify-content: flex-end; gap: 5px; margin-top: 10px; }
+.seat-card-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 .seat-card-actions .button { padding: 6px 9px; font-size: 9px; }
 .seat-card-actions .delete-seat { color: #a4574e; }
 .seat-notice { padding: 10px 15px; color: #547254; background: #f0f5ed; font-size: 10px; border-bottom: 1px solid #e7eee3; }
@@ -388,6 +391,8 @@ h1 { font: 700 34px/1.15 'Manrope', sans-serif; letter-spacing: -1.4px; margin-b
   .seat-directory-head { align-items: flex-start; flex-direction: column; padding: 16px; }
   .seat-head-actions { width: 100%; }
   .seat-head-actions .button { flex: 1; }
+  .seat-head-actions .seat-filter { flex: 1; }
+  .seat-filter button { flex: 1; padding-inline: 6px; }
   .seat-grid { grid-template-columns: 1fr; padding: 12px; }
   .seat-card { min-height: 138px; }
   .access-denied-card { padding: 28px 20px; }

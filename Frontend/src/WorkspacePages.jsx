@@ -90,19 +90,25 @@ export function AdminDashboard() {
 
 function SeatForm({ seat, onCancel, onSave, saving }) {
   const [seatNumber, setSeatNumber] = useState(seat?.seatNumber || seat?.number || '');
-  const [location, setLocation] = useState(seat?.location || seat?.floor || '');
+  const [floor, setFloor] = useState(seat?.floor ?? '');
   const [status, setStatus] = useState(seat?.status || 'AVAILABLE');
   const [error, setError] = useState('');
   async function submit(event) {
     event.preventDefault();
     if (!seatNumber.trim()) return setError('Seat number is required.');
-    await onSave({ seatNumber: seatNumber.trim(), location: location.trim(), status }, setError);
+    const normalizedFloor = typeof floor === 'string' ? floor.trim() : floor;
+    await onSave({
+      seatNumber: seatNumber.trim(),
+      floor: normalizedFloor !== '' && !Number.isNaN(Number(normalizedFloor)) ? Number(normalizedFloor) : normalizedFloor,
+      status,
+    }, setError);
   }
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onCancel()}><section className="modal-card seat-modal" role="dialog" aria-modal="true" aria-labelledby="seat-form-title"><div className="modal-heading"><button className="icon-button close-button" type="button" onClick={onCancel} aria-label="Close"><X size={19} /></button><p className="eyebrow">SEAT RECORD</p><h2 id="seat-form-title">{seat ? 'Edit seat' : 'Add a seat'}</h2><p className="modal-subtitle">Seat fields may need adjustment to match the backend model.</p></div><form className="user-form" onSubmit={submit}><div className="seat-form-fields"><label className="field"><span>Seat number</span><input autoFocus value={seatNumber} onChange={(event) => setSeatNumber(event.target.value)} placeholder="e.g. A-12" /></label><label className="field"><span>Location / floor</span><input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="e.g. First floor" /></label><label className="field"><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="AVAILABLE">Available</option><option value="UNAVAILABLE">Unavailable</option></select></label>{error && <small className="field-error">{error}</small>}</div><div className="form-footer"><span className="secure-note"><ShieldCheck size={15} /> Admin action</span><div className="form-actions"><button className="button button-quiet" type="button" onClick={onCancel}>Cancel</button><button className="button button-primary" type="submit" disabled={saving}>{saving ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}{saving ? 'Saving…' : 'Save seat'}</button></div></div></form></section></div>;
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onCancel()}><section className="modal-card seat-modal" role="dialog" aria-modal="true" aria-labelledby="seat-form-title"><div className="modal-heading"><button className="icon-button close-button" type="button" onClick={onCancel} aria-label="Close"><X size={19} /></button><p className="eyebrow">SEAT RECORD</p><h2 id="seat-form-title">{seat ? 'Edit seat' : 'Add a seat'}</h2><p className="modal-subtitle">Add the seat number, floor, and current status.</p></div><form className="user-form" onSubmit={submit}><div className="seat-form-fields"><label className="field"><span>Seat number</span><input autoFocus value={seatNumber} onChange={(event) => setSeatNumber(event.target.value)} placeholder="e.g. A-12" /></label><label className="field"><span>Floor</span><input value={floor} onChange={(event) => setFloor(event.target.value)} placeholder="e.g. 1" /></label><label className="field"><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="AVAILABLE">Available</option><option value="UNAVAILABLE">Unavailable</option></select></label>{error && <small className="field-error">{error}</small>}</div><div className="form-footer"><span className="secure-note"><ShieldCheck size={15} /> Admin action</span><div className="form-actions"><button className="button button-quiet" type="button" onClick={onCancel}>Cancel</button><button className="button button-primary" type="submit" disabled={saving}>{saving ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}{saving ? 'Saving…' : 'Save seat'}</button></div></div></form></section></div>;
 }
 
 export function SeatDirectory({ admin = false }) {
   const [seats, setSeats] = useState([]);
+  const [availableOnly, setAvailableOnly] = useState(!admin);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modal, setModal] = useState(null);
@@ -114,14 +120,15 @@ export function SeatDirectory({ admin = false }) {
     setLoading(true);
     setError('');
     try {
-      const result = await apiRequest(admin ? '/seats' : '/seats/available');
+      const endpoint = admin || !availableOnly ? '/seats' : '/seats/available';
+      const result = await apiRequest(endpoint);
       setSeats(unwrapList(result));
     } catch (loadError) {
       setError(loadError.message);
     } finally {
       setLoading(false);
     }
-  }, [admin]);
+  }, [admin, availableOnly]);
 
   useEffect(() => { loadSeats(); }, [loadSeats]);
 
@@ -172,13 +179,14 @@ export function SeatDirectory({ admin = false }) {
     }
   }
 
-  return <WorkspaceFrame title={admin ? 'Manage seats' : 'Available seats'} subtitle={admin ? 'Maintain the library’s study spaces.' : 'Find an open place for your next study session.'} links={admin ? [{ to: '/admin', label: 'Dashboard' }, { to: '/admin/users', label: 'Manage users' }, { to: '/admin/seats', label: 'Manage seats' }] : [{ to: '/student', label: 'Dashboard' }, { to: '/student/seats', label: 'Available seats' }, { to: '/student/profile', label: 'My profile' }]}>
-    <section className="seat-directory"><div className="seat-directory-head"><div><h2>{admin ? 'Seat directory' : 'Ready when you are'}</h2><p>{admin ? 'Add, edit, or remove library seat records.' : 'These seats are currently marked available.'}</p></div><div className="seat-head-actions"><button className="button button-outline" onClick={loadSeats}><RefreshCw size={15} /> Refresh</button>{admin && <button className="button button-primary" onClick={() => setModal({ seat: null })}><Plus size={16} /> Add seat</button>}</div></div>
+  return <WorkspaceFrame title={admin ? 'Manage seats' : 'Seat availability'} subtitle={admin ? 'Maintain the library’s study spaces.' : 'Browse every library seat and filter to the ones currently available.'} links={admin ? [{ to: '/admin', label: 'Dashboard' }, { to: '/admin/users', label: 'Manage users' }, { to: '/admin/seats', label: 'Manage seats' }] : [{ to: '/student', label: 'Dashboard' }, { to: '/student/seats', label: 'Seat availability' }, { to: '/student/profile', label: 'My profile' }]}>
+    <section className="seat-directory"><div className="seat-directory-head"><div><h2>{admin ? 'Seat directory' : availableOnly ? 'Available seats' : 'All seats'}</h2><p>{admin ? 'Add, edit, or remove library seat records.' : availableOnly ? 'Showing seats marked available.' : 'Showing every seat in the library.'}</p></div><div className="seat-head-actions">{!admin && <div className="seat-filter" role="group" aria-label="Filter seats"><button className={!availableOnly ? 'selected' : ''} aria-pressed={!availableOnly} onClick={() => setAvailableOnly(false)}>All seats</button><button className={availableOnly ? 'selected' : ''} aria-pressed={availableOnly} onClick={() => setAvailableOnly(true)}>Available</button></div>}<button className="button button-outline" onClick={loadSeats}><RefreshCw size={15} /> Refresh</button>{admin && <button className="button button-primary" onClick={() => setModal({ seat: null })}><Plus size={16} /> Add seat</button>}</div></div>
       {notice && <div className="seat-notice" role="status">{notice}</div>}
-      {error ? <div className="load-state error-state"><span className="state-icon"><X size={20} /></span><h3>Couldn’t load seats</h3><p>{error}</p><small>API endpoint: {API_URL}{admin ? '/seats' : '/seats/available'}</small><button className="button button-outline" onClick={loadSeats}>Try again</button></div> : loading ? <div className="load-state"><LoaderCircle className="spin loading-icon" size={24} /><p>Checking the library seats…</p></div> : seats.length === 0 ? <div className="load-state empty-state"><span className="state-icon"><Armchair size={21} /></span><h3>{admin ? 'No seats yet' : 'No seats are available right now'}</h3><p>{admin ? 'Add the first seat record to start managing library spaces.' : 'Check back soon or ask the library team for help.'}</p>{admin && <button className="button button-primary" onClick={() => setModal({ seat: null })}><Plus size={16} /> Add first seat</button>}</div> : <div className="seat-grid">{seats.map((seat, index) => {
+      {error ? <div className="load-state error-state"><span className="state-icon"><X size={20} /></span><h3>Couldn’t load seats</h3><p>{error}</p><small>API endpoint: {API_URL}{admin || !availableOnly ? '/seats' : '/seats/available'}</small><button className="button button-outline" onClick={loadSeats}>Try again</button></div> : loading ? <div className="load-state"><LoaderCircle className="spin loading-icon" size={24} /><p>Checking the library seats…</p></div> : seats.length === 0 ? <div className="load-state empty-state"><span className="state-icon"><Armchair size={21} /></span><h3>{admin ? 'No seats yet' : availableOnly ? 'No seats are available right now' : 'No seats in the library yet'}</h3><p>{admin ? 'Add the first seat record to start managing library spaces.' : availableOnly ? 'Switch to All seats or check back later.' : 'Ask the library team when seats are added.'}</p>{admin && <button className="button button-primary" onClick={() => setModal({ seat: null })}><Plus size={16} /> Add first seat</button>}</div> : <div className="seat-grid">{seats.map((seat, index) => {
         const id = seatId(seat) || `${seatLabel(seat, index)}-${index}`;
         const available = String(seat.status || seat.availability || 'AVAILABLE').toUpperCase().includes('AVAILABLE') && !String(seat.status || '').toUpperCase().includes('UNAVAILABLE');
-        return <article className="seat-card" key={id}><span className={`seat-icon ${available ? '' : 'seat-busy'}`}><Armchair size={21} /></span><div className="seat-status"><i className={available ? 'available' : ''} />{seat.status || seat.availability || (available ? 'AVAILABLE' : 'OCCUPIED')}</div><h3>{seatLabel(seat, index)}</h3><p><DoorOpen size={14} />{seat.location || seat.floor || seat.zone || 'Library floor'}</p><div className="seat-card-actions"><button className="button button-quiet" onClick={() => viewSeat(seat)}>View details</button>{admin && <><button className="button button-quiet" onClick={() => setModal({ seat })}>Edit</button><button className="button button-quiet delete-seat" onClick={() => deleteSeat(seat)} aria-label={`Delete ${seatLabel(seat, index)}`}><Trash2 size={15} /></button></>}</div></article>;
+        const status = seat.status || seat.availability || (available ? 'AVAILABLE' : 'UNAVAILABLE');
+        return <article className="seat-card" key={id}><span className={`seat-icon ${available ? '' : 'seat-busy'}`}><Armchair size={21} /></span><div className="seat-status"><i className={available ? 'available' : ''} />{status}</div><h3>{seatLabel(seat, index)}</h3><p><DoorOpen size={14} /><span>Floor {seat.floor ?? seat.location ?? seat.zone ?? '—'}</span></p><div className="seat-card-actions"><button className="button button-quiet" onClick={() => viewSeat(seat)}>View details</button>{admin && <><button className="button button-quiet" onClick={() => setModal({ seat })}>Edit</button><button className="button button-quiet delete-seat" onClick={() => deleteSeat(seat)} aria-label={`Delete ${seatLabel(seat, index)}`}><Trash2 size={15} /></button></>}</div></article>;
       })}</div>}
     </section>
     {modal && <SeatForm key={seatId(modal.seat) || 'new'} seat={modal.seat} onCancel={() => !saving && setModal(null)} onSave={saveSeat} saving={saving} />}
